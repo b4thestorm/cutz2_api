@@ -1,0 +1,4 @@
+pytest
+django == 4.2.0
+djangorestframework
+
