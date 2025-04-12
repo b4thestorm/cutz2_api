@@ -21,6 +21,8 @@ class CustomUser(AbstractUser, AddressMixin):
     description = models.TextField(max_length=255)
     role = models.CharField(max_length=50, choices=Role.choices, default=Role.BARBER)
     
+    base_role = Role.BARBER
+
     REQUIRED_FIELDS = []
 
     def __str__(self):
