@@ -1,21 +1,42 @@
 from django.shortcuts import render
-from adminprofile.models import CustomUser
-from adminprofile.serializer import CustomUserSerializer
-from rest_framework import permissions, viewsets, status
+from adminprofile.models import CustomUser, Services
+from adminprofile.serializer import CustomUserSerializer, ServiceSerializer
+from rest_framework import viewsets, status
 from rest_framework.response import Response
 
 class UserViewSet(viewsets.ModelViewSet):
     def create(self, request):
         data = request.data
-        serializer = CustomUserSerializer(data)
-        if serializer.is_valid():
-            payload = serializer.data
-            user = CustomUser.create_user(
-             email = payload.get("email", None),
-             first_name=payload.get("first_name", None),
-             last_name=payload.get("last_name", None),
-             password=payload.get("password"),
+        serializer = CustomUserSerializer(data=data, partial=True)
+        import pdb; pdb.set_trace()
+        payload = serializer.data
+        if payload.is_valid():
+            user = CustomUser.objects.create_user(
+             email = serializer.validated_data.get("email", None),
+             first_name=serializer.validated_data.get("first_name", None),
+             last_name=serializer.validated_data.get("last_name", None),
              role=CustomUser.Role.BARBER
             )
+            user.set_password(serializer.validated_data.get("password", None))
             user.save()
             return Response(status=status.HTTP_200_OK, data=serializer.data)
+
+class ServiceViewSet(viewsets.ModelViewSet):
+    def create(self, request, pk):
+        try:
+            barber = CustomUser.object.get_object_or_404(pk)
+        except Exception as e:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        serializer = ServiceSerializer(data=request.data)
+
+        if serializer.is_valid():
+            title = serializer.validated_data.get("title", None)
+            description = serializer.validated_data.get("description", None)
+            image_url =serializer.validated_data.get("image_url", None)
+            price = serializer.validated_data.get("price", None)
+            service = Services(title=title, description=description, image_url=image_url, price=price, barber=barber)
+            service.save()
+            return Response(status=status.HTTP_200_OK)
+        return Response(status=status.HTTP_404_NOT_FOUND)
+        
