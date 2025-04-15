@@ -6,6 +6,9 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 class UserViewSet(viewsets.ModelViewSet):
+    queryset = CustomUser.objects.all()
+    serializer_class = CustomUserSerializer
+
     def create(self, request):
         data = request.data
         serializer = CustomUserSerializer(data=data, partial=True)
