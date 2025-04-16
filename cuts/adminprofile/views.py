@@ -1,14 +1,18 @@
-from django.shortcuts import render
 from adminprofile.models import CustomUser, Services
 from adminprofile.serializer import CustomUserSerializer, ServiceSerializer
 from rest_framework import viewsets, status
-from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.parsers import MultiPartParser, JSONParser, FormParser
+import pdb
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = CustomUser.objects.all()
+    parser_classes =[JSONParser, MultiPartParser, FormParser]
     serializer_class = CustomUserSerializer
 
+    def update(self, request, *args, **kwargs):
+        return super().update(request, *args, **kwargs)
+        
     def create(self, request):
         data = request.data
         serializer = CustomUserSerializer(data=data, partial=True)

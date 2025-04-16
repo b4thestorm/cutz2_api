@@ -19,6 +19,7 @@ class CustomUser(AbstractUser, AddressMixin):
     email = models.EmailField(_("email address"), unique=True)
     title = models.CharField(max_length=50)
     description = models.TextField(max_length=255)
+    image_url = models.ImageField(null=True, blank=True, upload_to='images/')
     role = models.CharField(max_length=50, choices=Role.choices, default=Role.BARBER)
     
     base_role = Role.BARBER
