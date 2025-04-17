@@ -9,10 +9,15 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = CustomUser.objects.all()
     parser_classes =[JSONParser, MultiPartParser, FormParser]
     serializer_class = CustomUserSerializer
+    
+    def patch(self, request, pk):
+        instance = self.get_object(pk)
+        serializer = CustomUserSerializer(instance, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(status=201, data=serializer.data)
+        return Response(status=400, data="wrong parameters")
 
-    def update(self, request, *args, **kwargs):
-        return super().update(request, *args, **kwargs)
-        
     def create(self, request):
         data = request.data
         serializer = CustomUserSerializer(data=data, partial=True)

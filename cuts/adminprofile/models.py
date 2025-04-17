@@ -33,6 +33,7 @@ class CustomUser(AbstractUser, AddressMixin):
         if not self.pk:
             self.role = self.base_role
             return super().save(*args, **kwargs)
+        return super().save(*args, **kwargs)
 
 class Barber(CustomUser):
     base_role = CustomUser.Role.BARBER
