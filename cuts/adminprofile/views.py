@@ -35,6 +35,9 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_200_OK, data=serializer.data)
 
 class ServiceViewSet(viewsets.ModelViewSet):
+    serializer_class = ServiceSerializer
+    queryset = Services.objects.all()
+    
     def create(self, request):
         serializer = ServiceSerializer(data=request.data)
         if serializer.is_valid():
