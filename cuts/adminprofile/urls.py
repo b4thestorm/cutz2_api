@@ -1,8 +1,14 @@
-from .views import UserViewSet, ServiceViewSet
+from .views import UserViewSet, ServiceViewSet, barber_login_view
+from django.urls import path
 from rest_framework.routers import DefaultRouter
+
 
 router = DefaultRouter()
 router.register(r'users', UserViewSet, basename='user')
 router.register(r'services', ServiceViewSet, basename='services')
 
+
 urlpatterns = router.urls
+urlpatterns += [
+    path(r'login', barber_login_view, name="login")
+]

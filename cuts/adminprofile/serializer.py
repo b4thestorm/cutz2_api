@@ -1,6 +1,12 @@
 from rest_framework import serializers
 from .models import CustomUser, Services
 
+class LoginSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(required=True, allow_blank=True)
+    class Meta:
+        model = CustomUser
+        fields = ['email', 'password']
+
 class CustomUserSerializer(serializers.ModelSerializer):
     image_url = serializers.ImageField(max_length=None, use_url=True, required=False)
     email = serializers.EmailField(required=False)

@@ -12,6 +12,7 @@ class AddressMixin(models.Model):
         abstract = True
 
 class CustomUser(AbstractUser, AddressMixin):
+    USERNAME_FIELD = 'email'
     class Role(models.TextChoices):
         BARBER = "BARBER", 'Barber'
         CLIENT = "CLIENT", 'Client'

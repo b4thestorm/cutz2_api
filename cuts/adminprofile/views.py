@@ -1,9 +1,32 @@
 from adminprofile.models import CustomUser, Services
-from adminprofile.serializer import CustomUserSerializer, ServiceSerializer
+from adminprofile.serializer import CustomUserSerializer, ServiceSerializer, LoginSerializer
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, JSONParser, FormParser
-import pdb
+from rest_framework.throttling import UserRateThrottle
+from rest_framework.decorators import api_view, throttle_classes
+from django.contrib.auth import authenticate, login
+
+
+class NoPWCrackUserThrottle(UserRateThrottle):
+    rate = '10/day'
+
+@api_view(['POST'])
+@throttle_classes([NoPWCrackUserThrottle])
+def barber_login_view(request):
+    serializer = LoginSerializer(data=request.data, partial=True)
+    if serializer.is_valid():
+        email = serializer.validated_data.get("email", None)
+        password = serializer.validated_data.get("password", None)
+        user = authenticate(request, email=email, password=password)
+        if user is not None:
+            login(request, user)
+            serialized_user = CustomUserSerializer(user).data
+            return Response(status=200, data=serialized_user)
+        else:
+            return Response(status=403, data="HTTP 403 Forbidden response")
+
+    return Response(status=403, data="HTTP 403 Forbidden response")
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = CustomUser.objects.all()
@@ -45,7 +68,8 @@ class ServiceViewSet(viewsets.ModelViewSet):
                 barber = serializer.validated_data.get("barber", None)
             except Exception as e:
                 return Response(status=status.HTTP_404_NOT_FOUND)
-
+            
+           
             title = serializer.validated_data.get("title", None)
             description = serializer.validated_data.get("description", None)
             image_url =serializer.validated_data.get("image_url", None)
