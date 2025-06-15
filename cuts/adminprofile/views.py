@@ -3,18 +3,22 @@ from adminprofile.serializer import CustomUserSerializer, ServiceSerializer, Log
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, JSONParser, FormParser
-from rest_framework.throttling import UserRateThrottle
-from rest_framework.decorators import api_view, throttle_classes
-from django.contrib.auth import authenticate, login
+from rest_framework.decorators import api_view
+from django.contrib.auth import authenticate, login, logout
 
 
-class NoPWCrackUserThrottle(UserRateThrottle):
-    rate = '10/day'
+@api_view(['GET'])
+def barber_logout_view(request):
+    if request.user.is_authenticated:
+        logout(request)
+        return Response(status=200)
+    else:
+        return Response(status=403, data="HTTP 403 Forbidden Response")
 
 @api_view(['POST'])
-@throttle_classes([NoPWCrackUserThrottle])
 def barber_login_view(request):
     serializer = LoginSerializer(data=request.data, partial=True)
+    
     if serializer.is_valid():
         email = serializer.validated_data.get("email", None)
         password = serializer.validated_data.get("password", None)
@@ -25,8 +29,6 @@ def barber_login_view(request):
             return Response(status=200, data=serialized_user)
         else:
             return Response(status=403, data="HTTP 403 Forbidden response")
-
-    return Response(status=403, data="HTTP 403 Forbidden response")
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = CustomUser.objects.all()
