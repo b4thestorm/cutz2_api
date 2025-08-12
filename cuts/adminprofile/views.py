@@ -5,7 +5,8 @@ from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, JSONParser, FormParser
 from rest_framework.decorators import api_view
 from django.contrib.auth import authenticate, login, logout
-
+from django.contrib.auth.decorators import login_required
+from django.utils.decorators import method_decorator
 
 @api_view(['GET'])
 def barber_logout_view(request):
@@ -35,6 +36,7 @@ class UserViewSet(viewsets.ModelViewSet):
     parser_classes =[JSONParser, MultiPartParser, FormParser]
     serializer_class = CustomUserSerializer
     
+    @method_decorator(login_required())
     def patch(self, request, pk):
         instance = self.get_object(pk)
         serializer = CustomUserSerializer(instance, data=request.data, partial=True)
@@ -74,7 +76,7 @@ class ServiceViewSet(viewsets.ModelViewSet):
            
             title = serializer.validated_data.get("title", None)
             description = serializer.validated_data.get("description", None)
-            image_url =serializer.validated_data.get("image_url", None)
+            image_url = serializer.validated_data.get("image_url", None)
             price = serializer.validated_data.get("price", None)
             service = Services(title=title, description=description, image_url=image_url, price=price, barber=barber)
             service.save()

@@ -26,13 +26,14 @@ SECRET_KEY = "django-insecure-rf+mm6-4_n=(=#-0lu*vvj=20d&+oa-_4#5tj^l(u=t7%4pq@c
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
+APPEND_SLASH = False
 
 ALLOWED_HOSTS = []
-
 
 # Application definition
 
 INSTALLED_APPS = [
+    "daphne",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -40,8 +41,11 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django_extensions",
+    "django_eventstream",
     "corsheaders",
-    "adminprofile"
+    "rest_framework",
+    "adminprofile",
+    "integrations",
 ]
 
 MIDDLEWARE = [
@@ -75,7 +79,8 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "cuts.wsgi.application"
+# WSGI_APPLICATION = "cuts.wsgi.application"
+ASGI_APPLICATION = "cuts.asgi.application"
 
 
 # Database
@@ -143,3 +148,6 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+GCAL_SCOPES="https://www.googleapis.com/auth/calendar.events"
+GCAL_REDIRECT_URI="http://localhost:8000/integrations/gcal_auth"
