@@ -1,3 +1,4 @@
+from django.http.response import StreamingHttpResponse
 import requests
 import webbrowser
 import json
@@ -40,7 +41,6 @@ def gcal_auth(request):
             'redirect_uri': redirect_uri,
             'grant_type': 'authorization_code'}
         
-        
         payload = requests.post("https://oauth2.googleapis.com/token", data=data)
         payload = json.loads(payload.text)
         if payload:
@@ -52,21 +52,21 @@ def gcal_auth(request):
             try:
                 calendar_token = GCalIntegration.objects.filter(user=user)
             except:
-                print("no connection")
+                raise Exception("Error saving calendar token")
             
             if not calendar_token:
                 calendar = GCalIntegration(user=user, refresh_token=refresh_token, access_token=access_token, expiration_time=expires_in)
                 calendar.save()
-                send_event("test", "message", {"text": "connected"})
+                send_event("gcal_init", "message", {"status": "connected"})
                 return Response(200, status=status.HTTP_200_OK)
             else:
-               return Response(403, status=status.HTTP_200_OK)
+                return Response(403, status=status.HTTP_200_OK)
                
-    return Response(403, status=status.HTTP_403_FORBIDDEN)   
+    return Response(403, status=status.HTTP_403_FORBIDDEN)
 
-
+@api_view(['GET'])
 def test_stream(request):
     send_event("test", "message", {"text": "test"})
-    return Response(200, status=status.HTTP_200_OK)
+    return Response(200, status=status.HTTP_200_OK, content_type='text/event-stream')
 
     
