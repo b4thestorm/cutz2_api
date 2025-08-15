@@ -22,7 +22,7 @@ redirect_uri = settings.GCAL_REDIRECT_URI
 def gcal_init(request):
     if request.user.is_authenticated:
         try:
-            webbrowser.open(f"https://accounts.google.com/o/oauth2/auth?client_id={client_id}&redirect_uri={redirect_uri}&scope={settings.GCAL_SCOPES}&response_type=code")
+            webbrowser.open_new_tab(f"https://accounts.google.com/o/oauth2/auth?client_id={client_id}&redirect_uri={redirect_uri}&scope={settings.GCAL_SCOPES}&response_type=code")
         except:
             return Response(403, status=status.HTTP_403_FORBIDDEN)     
         
@@ -43,6 +43,7 @@ def gcal_auth(request):
         
         payload = requests.post("https://oauth2.googleapis.com/token", data=data)
         payload = json.loads(payload.text)
+
         if payload:
             access_token = payload.get('access_token', None)
             refresh_token = payload.get('refresh_token', None)
@@ -51,16 +52,18 @@ def gcal_auth(request):
             #search for the calendar access token before making a new one
             try:
                 calendar_token = GCalIntegration.objects.filter(user=user)
+                if not calendar_token:
+                    calendar = GCalIntegration(user=user, refresh_token=refresh_token, access_token=access_token, expiration_time=expires_in)
+                    calendar.save()
+                    send_event("gcal_init", "message", {"status": "connected"})
+                    return Response(200, status=status.HTTP_200_OK)
+                else:
+                    send_event("gcal_init", "message", {"status": "connected"})
+                    return Response(200, status=status.HTTP_200_OK)
             except:
                 raise Exception("Error saving calendar token")
-            
-            if not calendar_token:
-                calendar = GCalIntegration(user=user, refresh_token=refresh_token, access_token=access_token, expiration_time=expires_in)
-                calendar.save()
-                send_event("gcal_init", "message", {"status": "connected"})
-                return Response(200, status=status.HTTP_200_OK)
-            else:
-                return Response(403, status=status.HTTP_200_OK)
+
+
                
     return Response(403, status=status.HTTP_403_FORBIDDEN)
 
