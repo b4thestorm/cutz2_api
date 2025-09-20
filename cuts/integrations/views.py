@@ -22,7 +22,9 @@ redirect_uri = settings.GCAL_REDIRECT_URI
 def gcal_init(request):
     if request.user.is_authenticated:
         try:
-            webbrowser.open_new_tab(f"https://accounts.google.com/o/oauth2/auth?client_id={client_id}&redirect_uri={redirect_uri}&scope={settings.GCAL_SCOPES}&response_type=code")
+            webbrowser.register('google-chrome', None, webbrowser.BackgroundBrowser('/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'))
+            chrome = webbrowser.get('google-chrome')
+            chrome.open_new_tab(f"https://accounts.google.com/o/oauth2/auth?client_id={client_id}&redirect_uri={redirect_uri}&scope={settings.GCAL_SCOPES}&response_type=code")
         except:
             return Response(403, status=status.HTTP_403_FORBIDDEN)     
         
@@ -49,7 +51,6 @@ def gcal_auth(request):
             refresh_token = payload.get('refresh_token', None)
             expires_in = payload.get('expires_in', None)
 
-            #search for the calendar access token before making a new one
             try:
                 calendar_token = GCalIntegration.objects.filter(user=user)
                 if not calendar_token:

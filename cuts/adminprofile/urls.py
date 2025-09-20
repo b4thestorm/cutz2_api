@@ -7,7 +7,6 @@ router = DefaultRouter()
 router.register(r'users', UserViewSet, basename='user')
 router.register(r'services', ServiceViewSet, basename='services')
 
-
 urlpatterns = router.urls
 urlpatterns += [
     path(r'login', barber_login_view, name="login"),

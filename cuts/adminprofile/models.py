@@ -50,5 +50,5 @@ class Services(models.Model):
     title = models.CharField(max_length=50)
     description = models.TextField(max_length=255)
     image_url = models.ImageField(null=True, blank=True, upload_to='images/')
-    price = models.DecimalField(max_digits=5, decimal_places=2)
+    price = models.IntegerField(default=0)
     barber = models.ForeignKey(CustomUser, on_delete=models.CASCADE)

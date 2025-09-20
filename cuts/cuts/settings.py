@@ -58,6 +58,19 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
+CORS_ALLOW_METHODS = (
+    'GET',
+    'POST',
+    'PUT',
+    'PATCH',
+    'DELETE',
+    'OPTIONS'
+)
+
+CSRF_TRUSTED_ORIGINS = ["http://localhost:3000",]
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_ORIGINS = ["http://localhost:3000",]
+
 
 AUTH_USER_MODEL = "adminprofile.CustomUser"
 
@@ -111,18 +124,6 @@ AUTH_PASSWORD_VALIDATORS = [
     # {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",},
 ]
 
-CORS_ALLOW_METHODS = (
-    'GET',
-    'POST',
-    'PUT',
-    'PATCH',
-    'DELETE',
-    'OPTIONS'
-)
-
-CSRF_TRUSTED_ORIGINS = ["http://localhost:3000",]
-CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOWED_ORIGINS = ["http://localhost:3000",]
 
 
 # Internationalization

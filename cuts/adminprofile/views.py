@@ -73,7 +73,6 @@ class ServiceViewSet(viewsets.ModelViewSet):
             except Exception as e:
                 return Response(status=status.HTTP_404_NOT_FOUND)
             
-           
             title = serializer.validated_data.get("title", None)
             description = serializer.validated_data.get("description", None)
             image_url = serializer.validated_data.get("image_url", None)
