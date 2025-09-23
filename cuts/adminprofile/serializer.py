@@ -1,3 +1,4 @@
+from django.db import models
 from rest_framework import serializers
 from .models import CustomUser, Services
 
@@ -27,3 +28,12 @@ class ServiceSerializer(serializers.ModelSerializer):
         model = Services
         fields = '__all__'
 
+class PasswordResetSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=False)
+
+class PasswordSerializer(serializers.Serializer):
+    password = serializers.CharField(required=True)
+    
+    class Meta:
+        model = CustomUser
+        fields = ['password']
