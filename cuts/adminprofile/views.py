@@ -141,6 +141,8 @@ class ServiceViewSet(viewsets.ModelViewSet):
             price = serializer.validated_data.get("price", None)
             service = Services(title=title, description=description, image_url=image_url, price=price, barber=barber)
             service.save()
-        
-        return Response(status=status.HTTP_200_OK)
+            return Response(status=status.HTTP_200_OK, data=serializer.data)
+        else:
+            print("CHECK THIS OUT")
+            return Response(status=status.HTTP_400_BAD_REQUEST, data=serializer.errors)
         

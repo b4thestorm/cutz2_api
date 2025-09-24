@@ -24,6 +24,9 @@ class CustomUserSerializer(serializers.ModelSerializer):
 
 class ServiceSerializer(serializers.ModelSerializer):
     image_url = serializers.ImageField(max_length=None, use_url=True, required=False)
+    title = serializers.CharField(required=True)
+    description = serializers.CharField(required=True)
+    price = serializers.CharField(required=True)
     class Meta:
         model = Services
         fields = '__all__'
