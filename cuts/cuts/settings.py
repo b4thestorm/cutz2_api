@@ -151,5 +151,5 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-GCAL_SCOPES="https://www.googleapis.com/auth/calendar.events"
+GCAL_SCOPES='https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar'
 GCAL_REDIRECT_URI="http://localhost:8000/integrations/gcal_auth"

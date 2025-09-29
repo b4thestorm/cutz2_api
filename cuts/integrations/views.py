@@ -33,10 +33,11 @@ def gcal_init(request):
 @api_view(['GET'])
 @csrf_exempt
 def gcal_auth(request):
+    print("request.user.is_authenticated", request.user.is_authenticated)
     if request.user.is_authenticated:
         user = request.user
         auth_code = request.GET.get('code', None)
-
+        print("auth_code ", auth_code)
         data = {'code': auth_code,
             'client_id': client_id,
             'client_secret': client_secret,
@@ -45,26 +46,31 @@ def gcal_auth(request):
         
         payload = requests.post("https://oauth2.googleapis.com/token", data=data)
         payload = json.loads(payload.text)
-
+        print("I made a POST request back to Google ", payload)
         if payload:
             access_token = payload.get('access_token', None)
             refresh_token = payload.get('refresh_token', None)
             expires_in = payload.get('expires_in', None)
-
             try:
                 calendar_token = GCalIntegration.objects.filter(user=user)
-                if not calendar_token:
+                if  len(calendar_token) == 0:
                     calendar = GCalIntegration(user=user, refresh_token=refresh_token, access_token=access_token, expiration_time=expires_in)
                     calendar.save()
                     send_event("gcal_init", "message", {"status": "connected"})
                     return Response(200, status=status.HTTP_200_OK)
                 else:
-                    send_event("gcal_init", "message", {"status": "connected"})
+                    calendar = calendar_token[0]
+                    if calendar.access_token:
+                        send_event("gcal_init", "message", {"status": "connected"})
+                    else:
+                        calendar.access_token = access_token
+                        calendar.expiration_time = expires_in
+                        calendar.refresh_token = refresh_token
+                        calendar.save()
+
                     return Response(200, status=status.HTTP_200_OK)
             except:
                 raise Exception("Error saving calendar token")
-
-
                
     return Response(403, status=status.HTTP_403_FORBIDDEN)
 

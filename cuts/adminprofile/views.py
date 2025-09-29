@@ -145,4 +145,3 @@ class ServiceViewSet(viewsets.ModelViewSet):
         else:
             print("CHECK THIS OUT")
             return Response(status=status.HTTP_400_BAD_REQUEST, data=serializer.errors)
-        
