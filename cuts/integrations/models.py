@@ -100,7 +100,7 @@ class GCalIntegration(models.Model):
     
     def get_service_events(self):
         try:
-            response = requests.get(f"https://www.googleapis.com/calendar/v3/calendars/{self.calendar_id}/events?q=Service%20id%3A%202", headers={
+            response = requests.get(f"https://www.googleapis.com/calendar/v3/calendars/{self.calendar_id}/events?q=Service%20id", headers={
                 "Authorization": f"Bearer {self.access_token}",
                 "Content-Type": "application/json"
             })
@@ -140,7 +140,7 @@ class Booking(models.Model):
 
     @classmethod
     def process_events(cls, events, integration):
-        data = {'status': 'in progess', 'payload': []}
+        data = {'payload': []}
         for event in events:
             eventid = event.get('id', None)
             start = datetime.datetime.fromisoformat(event.get('start').get('dateTime'))
@@ -170,8 +170,7 @@ class Booking(models.Model):
             except ObjectDoesNotExist as e:
                 print(f"Service {service_id}: does not exist")
                 continue
-        
-        data['status'] = 'done'
+
         return data
     
     #GITHUB COPILOT MADE THIS function FOR ME -__-

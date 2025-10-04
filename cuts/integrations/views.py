@@ -1,4 +1,4 @@
-import datetime
+import pdb
 import requests
 import webbrowser
 import json
@@ -6,6 +6,7 @@ import json
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from django.utils import timezone
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django_eventstream import send_event
@@ -80,24 +81,23 @@ def gcal_auth(request):
 # /integrations/calendar_events
 @api_view(['GET'])
 def calendar_events(request):
-    try:
-        bookings = Booking.objects.filter(start_time=datetime.datetime.now())
-    except:
-        print('No Bookings Available')
-    
+    today = timezone.now().date()
+    bookings = Booking.objects.filter(start_time__date=today)
     if len(bookings) > 0:
-        serializer = BookingSerializer(data=bookings)
+        serializer = BookingSerializer(bookings, many=True)
         return Response(status=status.HTTP_200_OK, data=serializer.data)
     
-    calendar_id = request.GET('calendar_id', None)
-    try:
-        calendar = GCalIntegration.objects.get(calendar_id=calendar_id)
-        booking_events = calendar.get_service_events() #works if access token is recent
-        if booking_events['status'] == 'Done':
-            serializer = BookingSerializer(data=booking_events['events'])
-            return Response(data=serializer.data, status=status.HTTP_200_OK)
-    except ObjectDoesNotExist as e:
-        return Response(status=status.HTTP_400_BAD_REQUEST)
+    # manual = request.GET.get('manual')
+    # if manual:    
+    #     calendar_id = request.GET('calendar_id', None)
+    #     try:
+    #         calendar = GCalIntegration.objects.get(calendar_id=calendar_id)
+    #         booking_events = calendar.get_service_events() #works if access token is recent
+         
+    #         serializer = BookingSerializer(data=booking_events['payload'])
+    #         return Response(data=serializer.data, status=status.HTTP_200_OK)
+    #     except ObjectDoesNotExist:
+    #         return Response(status=status.HTTP_404_NOT_FOUND)
 
     return Response(data=serializer.data, status=status.HTTP_200_OK)
 
