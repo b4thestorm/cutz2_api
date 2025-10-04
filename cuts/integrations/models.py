@@ -130,6 +130,7 @@ class GCalIntegration(models.Model):
 
 class Booking(models.Model):
     eventid = models.CharField(max_length=255, null=True)
+    name = models.CharField(max_length=75, null=True)
     start_time = models.DateTimeField(blank=True, null=True)
     end_time = models.DateTimeField(blank=True, null=True)
     service_id = models.ForeignKey(Services, on_delete=models.CASCADE)
@@ -158,6 +159,7 @@ class Booking(models.Model):
                 service = Services.objects.get(id=service_id)
                 booking = Booking(
                     eventid=eventid,
+                    name=name,
                     start_time=start,
                     end_time=finished,
                     service_id=service,
