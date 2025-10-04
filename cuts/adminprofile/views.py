@@ -143,5 +143,4 @@ class ServiceViewSet(viewsets.ModelViewSet):
             service.save()
             return Response(status=status.HTTP_200_OK, data=serializer.data)
         else:
-            print("CHECK THIS OUT")
             return Response(status=status.HTTP_400_BAD_REQUEST, data=serializer.errors)

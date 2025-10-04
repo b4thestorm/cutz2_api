@@ -1,16 +1,19 @@
-from django.http.response import StreamingHttpResponse
+import datetime
 import requests
 import webbrowser
 import json
+
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
 from django_eventstream import send_event
 from dotenv import dotenv_values
 from rest_framework.views import csrf_exempt
 
-from integrations.models import GCalIntegration
+from integrations.serializer import BookingSerializer
+from integrations.models import Booking, GCalIntegration
 
 
 config = dotenv_values("../.env")
@@ -73,6 +76,30 @@ def gcal_auth(request):
                 raise Exception("Error saving calendar token")
                
     return Response(403, status=status.HTTP_403_FORBIDDEN)
+
+# /integrations/calendar_events
+@api_view(['GET'])
+def calendar_events(request):
+    try:
+        bookings = Booking.objects.filter(start_time=datetime.datetime.now())
+    except:
+        print('No Bookings Available')
+    
+    if len(bookings) > 0:
+        serializer = BookingSerializer(data=bookings)
+        return Response(status=status.HTTP_200_OK, data=serializer.data)
+    
+    calendar_id = request.GET('calendar_id', None)
+    try:
+        calendar = GCalIntegration.objects.get(calendar_id=calendar_id)
+        booking_events = calendar.get_service_events() #works if access token is recent
+        if booking_events['status'] == 'Done':
+            serializer = BookingSerializer(data=booking_events['events'])
+            return Response(data=serializer.data, status=status.HTTP_200_OK)
+    except ObjectDoesNotExist as e:
+        return Response(status=status.HTTP_400_BAD_REQUEST)
+
+    return Response(data=serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
 def test_stream(request):
