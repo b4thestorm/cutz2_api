@@ -23,12 +23,14 @@ client_secret = config['GCAL_CLIENT_SECRET']
 redirect_uri = settings.GCAL_REDIRECT_URI
 
 @api_view(['GET'])
+@csrf_exempt
 def gcal_init(request):
     if request.user.is_authenticated:
         try:
+            request.session['calendar_id'] = request.GET.get('calendar_id', None)
             webbrowser.register('google-chrome', None, webbrowser.BackgroundBrowser('/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'))
             chrome = webbrowser.get('google-chrome')
-            chrome.open_new_tab(f"https://accounts.google.com/o/oauth2/auth?client_id={client_id}&redirect_uri={redirect_uri}&scope={settings.GCAL_SCOPES}&response_type=code")
+            chrome.open_new_tab(f"https://accounts.google.com/o/oauth2/auth?client_id={client_id}&redirect_uri={redirect_uri}&scope={settings.GCAL_SCOPES}&response_type=code&prompt=consent&access_type=offline")
         except:
             return Response(403, status=status.HTTP_403_FORBIDDEN)     
         
@@ -70,7 +72,9 @@ def gcal_auth(request):
                         calendar.access_token = access_token
                         calendar.expiration_time = expires_in
                         calendar.refresh_token = refresh_token
+                        calendar.calendar_id = requests.session['calendar_id']
                         calendar.save()
+                        send_event("gcal_init", "message", {"status": "connected"})
 
                     return Response(200, status=status.HTTP_200_OK)
             except:
@@ -87,19 +91,19 @@ def calendar_events(request):
         serializer = BookingSerializer(bookings, many=True)
         return Response(status=status.HTTP_200_OK, data=serializer.data)
     
-    # manual = request.GET.get('manual')
-    # if manual:    
-    #     calendar_id = request.GET('calendar_id', None)
-    #     try:
-    #         calendar = GCalIntegration.objects.get(calendar_id=calendar_id)
-    #         booking_events = calendar.get_service_events() #works if access token is recent
+    manual = request.GET.get('manual')
+    if manual == 'force':    
+        calendar_id = request.GET('calendar_id', None)
+        try:
+            calendar = GCalIntegration.objects.get(calendar_id=calendar_id)
+            booking_events = calendar.get_service_events() #works if access token is recent
          
-    #         serializer = BookingSerializer(data=booking_events['payload'])
-    #         return Response(data=serializer.data, status=status.HTTP_200_OK)
-    #     except ObjectDoesNotExist:
-    #         return Response(status=status.HTTP_404_NOT_FOUND)
+            serializer = BookingSerializer(data=booking_events['payload'])
+            return Response(data=serializer.data, status=status.HTTP_200_OK)
+        except ObjectDoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
 
-    return Response(data=serializer.data, status=status.HTTP_200_OK)
+    return Response(status=status.HTTP_204_NO_CONTENT)
 
 @api_view(['GET'])
 def test_stream(request):
