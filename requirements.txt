@@ -11,3 +11,6 @@ django-eventstream[drf]==5.1.0
 daphne==4.1.1
 cryptography==3.4.6
 channels==4.0.0
+langgraph
+langchain
+ipython
