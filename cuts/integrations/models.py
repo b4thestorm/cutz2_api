@@ -39,6 +39,7 @@ class GCalIntegration(models.Model):
         
 
     def insert_service_event(self, body):
+        """Book a Google Calendar event and a new Booking"""
         start_time = body.get('start_time', None)
         end_time = body.get('end_time', None)
         description = body.get('description', None)
@@ -111,8 +112,7 @@ class GCalIntegration(models.Model):
                 raise ValueError(f"{error}")
             
             items = payload.get('items', None)
-            print(items)
-            if len(items) > 0:
+            if items is not None and len(items) > 0:
                 bookings = Booking.process_events(items, self) #('status', [events])
                 return bookings
             else:
@@ -127,6 +127,8 @@ class GCalIntegration(models.Model):
         times = str(time).split(' ')
         return "T".join(times) + 'Z'
 
+    def barber_availability():
+        pass
 
 class Booking(models.Model):
     eventid = models.CharField(max_length=255, null=True)
@@ -172,7 +174,7 @@ class Booking(models.Model):
             except ObjectDoesNotExist as e:
                 print(f"Service {service_id}: does not exist")
                 continue
-
+                
         return data
     
     #GITHUB COPILOT MADE THIS function FOR ME -__-

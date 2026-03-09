@@ -60,7 +60,7 @@ def gcal_auth(request):
             try:
                 calendar_token = GCalIntegration.objects.filter(user=user)
                 if  len(calendar_token) == 0:
-                    calendar = GCalIntegration(user=user, refresh_token=refresh_token, access_token=access_token, expiration_time=expires_in)
+                    calendar = GCalIntegration(user=user, refresh_token=refresh_token, access_token=access_token, expiration_time=expires_in, calendar_id=request.session['calendar_id'])
                     calendar.save()
                     send_event("gcal_init", "message", {"status": "connected"})
                     return Response(200, status=status.HTTP_200_OK)
@@ -72,7 +72,7 @@ def gcal_auth(request):
                         calendar.access_token = access_token
                         calendar.expiration_time = expires_in
                         calendar.refresh_token = refresh_token
-                        calendar.calendar_id = requests.session['calendar_id']
+                        calendar.calendar_id = request.session['calendar_id']
                         calendar.save()
                         send_event("gcal_init", "message", {"status": "connected"})
 
@@ -85,24 +85,25 @@ def gcal_auth(request):
 # /integrations/calendar_events
 @api_view(['GET'])
 def calendar_events(request):
-    today = timezone.now().date()
-    bookings = Booking.objects.filter(start_time__date=today)
-    if len(bookings) > 0:
-        serializer = BookingSerializer(bookings, many=True)
-        return Response(status=status.HTTP_200_OK, data=serializer.data)
-    
     manual = request.GET.get('manual')
-    if manual == 'force':    
-        calendar_id = request.GET('calendar_id', None)
+    if manual == 'force':
         try:
-            calendar = GCalIntegration.objects.get(calendar_id=calendar_id)
+            calendar = GCalIntegration.objects.get(user=request.user)
             booking_events = calendar.get_service_events() #works if access token is recent
-         
+            if booking_events is None:
+               return Response(status=status.HTTP_204_NO_CONTENT)
+            print("these are bookings", booking_events)
             serializer = BookingSerializer(data=booking_events['payload'])
             return Response(data=serializer.data, status=status.HTTP_200_OK)
         except ObjectDoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
-
+    else:
+        today = timezone.now().date()
+        bookings = Booking.objects.filter(start_time__date=today)
+        if bookings is not None and len(bookings) > 0:
+            serializer = BookingSerializer(bookings, many=True)
+            return Response(status=status.HTTP_200_OK, data=serializer.data)
+    
     return Response(status=status.HTTP_204_NO_CONTENT)
 
 @api_view(['GET'])
