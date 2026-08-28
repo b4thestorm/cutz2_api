@@ -4,7 +4,8 @@ from chat.models import CalendarAgent
 def barber_agent(request):
     agent = CalendarAgent()
     if request.method == "POST":
-        user_input = request.POST.get("user_input")
+        user_input = request.POST.get("user_input") # Get user input from POST data
         response = agent.invoke(user_input)
+        
         return HttpResponse(response)
     return HttpResponse("Hello World")

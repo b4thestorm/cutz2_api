@@ -2,6 +2,7 @@ import pdb
 import requests
 import webbrowser
 import json
+from pathlib import Path
 
 from rest_framework import status
 from rest_framework.decorators import api_view
@@ -17,7 +18,10 @@ from integrations.serializer import BookingSerializer
 from integrations.models import Booking, GCalIntegration
 
 
-config = dotenv_values("../.env")
+# Resolve .env relative to the repo root (cuts/integrations/views.py -> ../../.env),
+# not relative to CWD, so this works under ./init.sh, runserver, daphne, etc.
+_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+config = dotenv_values(str(_REPO_ROOT / ".env"))
 client_id = config['GCAL_CLIENT_ID']
 client_secret = config['GCAL_CLIENT_SECRET']
 redirect_uri = settings.GCAL_REDIRECT_URI

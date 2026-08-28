@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "adminprofile",
     "integrations",
+    "chat",
 ]
 
 MIDDLEWARE = [
