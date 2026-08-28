@@ -1,0 +1,12 @@
+{
+  "features": [
+    {
+      "id": "feat-001",
+      "name": "Setup pytest and smoke test for /chat",
+      "description": "Configure pytest for the Django project (pytest, pytest-django, conftest.py with DJANGO_SETTINGS_MODULE pointing at cuts.cuts.settings) and add a smoke test that hits the /chat endpoint to confirm it responds. Smoke test must run under ./init.sh and pass before this feature is marked done.",
+      "dependencies": [],
+      "status": "not-started",
+      "evidence": ""
+    }
+  ]
+}
