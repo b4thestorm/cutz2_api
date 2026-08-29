@@ -56,8 +56,10 @@ if [ -f pytest.ini ] || [ -f pyproject.toml ] && grep -q "pytest" pyproject.toml
     exit 1
   fi
 else
-  if ! $MANAGE test; then
-    echo "FAIL: 'manage.py test' exited non-zero." >&2
+  # `cuts` is the project package; without an explicit label, manage.py test
+  # discovery scopes to the current directory and finds zero tests.
+  if ! $MANAGE test cuts; then
+    echo "FAIL: 'manage.py test cuts' exited non-zero." >&2
     exit 1
   fi
 fi
