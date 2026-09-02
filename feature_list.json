@@ -1,12 +1,13 @@
 {
-  "features": [
-    {
-      "id": "feat-002",
-      "name": "Barber twilio_phone_number field + /agent endpoint",
-      "description": "Add a twilio_phone_number field to the Barber model (adminprofile app). Capability is fake for now — just a place to store the phone number. Then add a POST endpoint at /agent in the chat app that parses the request, looks up the barber matching the provided twilio_phone_number, and returns that barber. Endpoint should be reachable via ./init.sh verification.",
-      "dependencies": [],
-      "status": "done",
-      "evidence": "./init.sh: all 4 checks pass (exit 0). manage.py check clean, migrate --check clean. NOTE: step 4 reports 'Found 0 test(s)' because Django's manage.py test runner with no label does not auto-discover across INSTALLED_APPS in this layout. The 6 tests written under cuts/chat/tests.py (BarberAgentEndpointTests) all pass when run explicitly: 'cutz2/bin/python cuts/manage.py test chat -v 2' -> 'Ran 6 tests in 0.671s OK'. Tests cover: 200 on known barber, 404 on unknown phone, 400 on missing field, 400 on invalid JSON, 405 on GET, role=BARBER filter excludes CLIENT with same phone. Migration 0008_customuser_twilio_phone_number generated and applied. /agent/ is reachable via chat.urls mounted at /agent/ in cuts/cuts/urls.py."
-    }
-  ]
+  "name": "CalenderAgent",
+  "description": "Implement the CalendarAgent with GCalIntegration tools for the Langraph based agent using openai:gpt-4.1-mini LLM.
+  The goal is to receive messages from /agent POST endpoint, reason through the user message and agent message to prompt itself to create a new calendar booking, show available services, or exit early with \"STOP\" command.
+  \n  The graph should start with
+  \"Hi, how are you? I\'m Arnold's assistant. I can help you with these things today:
+    show you a list of all the services, he provides or I can let you book a haircut appointment with him today.\"
+  \n  Features:
+    + Create a new calendar booking using GCalIntegration#insert_service_events
+    + Show all the services that the specific Barber has available
+    + Exit early with \"STOP\" command
+  "
 }
