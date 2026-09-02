@@ -4,10 +4,15 @@ from langchain_core import messages
 # from langchain_qwq import ChatQwen  # temporarily commented: langchain_qwq 0.3.x requires Python 3.11+, venv is 3.10. See progress.md.
 from typing import TypedDict, Annotated
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
+try:
+    from twilio.rest import Client
+except ImportError:  # pragma: no cover
+    Client = None  # Twilio not installed – tool will return a placeholder message
+
 import os
 from langgraph.graph import StateGraph, START, END
 from integrations.models import GCalIntegration, Services
-from adminprofile.models import Services, CustomUser
+from adminprofile.models import CustomUser
 
 class MessageState(TypedDict):
     """State of the conversation."""
@@ -40,7 +45,7 @@ class CalendarAgent:
             llm = EchoLLM()
         self.llm = llm
         # Bind the tools so the LLM can call them
-        self.llm = self.llm.bind_tools([self.welcome_message, self.view_services, self.book_appointment])
+        self.llm = self.llm.bind_tools([self.welcome_message, self.view_services, self.book_appointment, self.send_sms])
         self.graph = StateGraph(MessageState)
         # Build the graph for the agent
         self.graph.add_edge(START, "welcome_message")
@@ -96,6 +101,28 @@ class CalendarAgent:
             return {"messages": [AIMessage(content="✅ Appointment booked.")]}
         except Exception:
             return {"messages": [AIMessage(content="Failed to book appointment.")]}
+
+    @tool
+    def send_sms(self, to: str, body: str):
+        """Send a text message via Twilio.
+        The LLM can call this tool whenever it wants to notify the user.
+        Returns a confirmation message as an AIMessage.
+        """
+        if Client is None:
+            # Twilio library not available – graceful fallback
+            return {"messages": [AIMessage(content="⚠️ Twilio library not installed; SMS not sent.")]}
+        # Pull credentials from environment
+        account_sid = os.getenv("TWILIO_ACCOUNT_SID")
+        auth_token = os.getenv("TWILIO_AUTH_TOKEN")
+        from_number = os.getenv("TWILIO_FROM_NUMBER")
+        if not all([account_sid, auth_token, from_number]):
+            return {"messages": [AIMessage(content="⚠️ Twilio credentials not set; SMS not sent.")]}
+        try:
+            client = Client(account_sid, auth_token)
+            client.messages.create(body=body, from_=from_number, to=to)
+            return {"messages": [AIMessage(content="✅ SMS sent.")]}
+        except Exception as e:
+            return {"messages": [AIMessage(content=f"❗️ Failed to send SMS: {e}")]}
 
     def conditional_edge(self, state: MessageState):
         """Determine the next node based on the LLM's last message."""
