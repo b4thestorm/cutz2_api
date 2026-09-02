@@ -3,6 +3,10 @@ import json
 from django.test import TestCase
 from django.urls import reverse
 
+from unittest.mock import patch
+from langchain_core.messages import AIMessage
+from chat.models import CalendarAgent
+from langgraph.constants import END
 from adminprofile.models import CustomUser
 
 
@@ -80,3 +84,19 @@ class BarberAgentEndpointTests(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["email"], "barber1@example.com")
+
+
+class CalendarAgentToolTests(TestCase):
+    def test_book_appointment_calls_integration(self):
+        agent = CalendarAgent()
+        with patch('integrations.models.GCalIntegration.insert_service_event') as mock_insert:
+            result = agent.book_appointment.func(agent, {})
+            self.assertIn('messages', result)
+            self.assertIsInstance(result['messages'][0], AIMessage)
+            self.assertEqual(result['messages'][0].content, "✅ Appointment booked.")
+            mock_insert.assert_called_once()
+
+    def test_conditional_edge_stop(self):
+        agent = CalendarAgent()
+        state = {"messages": [AIMessage(content="STOP")] }
+        self.assertEqual(agent.conditional_edge(state), END)

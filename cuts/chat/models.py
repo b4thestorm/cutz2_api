@@ -91,7 +91,8 @@ class CalendarAgent:
         """Book an appointment using GCalIntegration and return a confirmation message."""
         try:
             # In a real implementation, we would call the integration method.
-            # For now we simulate success without side‑effects.
+            # Here we simulate a call to GCalIntegration.insert_service_event.
+            GCalIntegration().insert_service_event(body)
             return {"messages": [AIMessage(content="✅ Appointment booked.")]}
         except Exception:
             return {"messages": [AIMessage(content="Failed to book appointment.")]}
