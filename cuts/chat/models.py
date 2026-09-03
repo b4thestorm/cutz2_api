@@ -76,7 +76,7 @@ class CalendarAgent:
     @tool
     def welcome_message(self):
         """Return a friendly welcome message for the Calendar Agent."""
-        return {"messages": [AIMessage(content="Welcome to the Calendar Agent! How can I assist you today?")]}
+        return {"messages": [AIMessage(content="Welcome to the Calendar Agent! I can assist you with seeing the services he provides, and i can help you book a haricut with him. If you are satisfied with the service and want to end this converation, send the message \"Stop\". Ottherwise let me know what you would like to do.")]}
 
     def run_llm(self, state: MessageState):
         """Run the LLM on the current message history and append its response.
