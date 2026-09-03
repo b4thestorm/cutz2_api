@@ -22,7 +22,8 @@ class CustomUser(AbstractUser, AddressMixin):
     description = models.TextField(max_length=255)
     image_url = models.ImageField(null=True, blank=True, upload_to='images/')
     role = models.CharField(max_length=50, choices=Role.choices, default=Role.BARBER)
-    
+    twilio_phone_number = models.CharField(max_length=20, null=True, blank=True)
+
     base_role = Role.BARBER
 
     REQUIRED_FIELDS = []

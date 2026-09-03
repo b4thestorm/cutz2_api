@@ -1,12 +1,13 @@
 {
-  "features": [
-    {
-      "id": "feat-001",
-      "name": "Setup pytest and smoke test for /chat",
-      "description": "Configure pytest for the Django project (pytest, pytest-django, conftest.py with DJANGO_SETTINGS_MODULE pointing at cuts.cuts.settings) and add a smoke test that hits the /chat endpoint to confirm it responds. Smoke test must run under ./init.sh and pass before this feature is marked done.",
-      "dependencies": [],
-      "status": "not-started",
-      "evidence": ""
-    }
-  ]
+  "name": "CalenderAgent",
+  "description": "Implement the CalendarAgent with GCalIntegration tools for the Langraph based agent using openai:gpt-4.1-mini LLM.
+  The goal is to receive messages from /agent POST endpoint, reason through the user message and agent message to prompt itself to create a new calendar booking, show available services, or exit early with \"STOP\" command.
+  \n  The graph should start with
+  \"Hi, how are you? I\'m Arnold's assistant. I can help you with these things today:
+    show you a list of all the services, he provides or I can let you book a haircut appointment with him today.\"
+  \n  Features:
+    + Create a new calendar booking using GCalIntegration#insert_service_events
+    + Show all the services that the specific Barber has available
+    + Exit early with \"STOP\" command
+  "
 }
