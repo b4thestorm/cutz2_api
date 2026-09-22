@@ -2,35 +2,37 @@ from IPython.display import Image
 from langchain.tools import tool
 from langchain_core import messages
 # from langchain_qwq import ChatQwen  # temporarily commented: langchain_qwq 0.3.x requires Python 3.11+, venv is 3.10. See progress.md.
-from typing import TypedDict, Annotated
-from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
-try:
-    from twilio.rest import Client
-except ImportError:  # pragma: no cover
-    Client = None  # Twilio not installed – tool will return a placeholder message
+from typing import Annotated
+from typing_extensions import TypedDict
 
+from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 import os
 from langgraph.graph import StateGraph, START, END
+from langgraph.graph.message import add_messages
+from langgraph.checkpoint.memory import MemorySaver
+from langgraph.types import interrupt
 from integrations.models import GCalIntegration, Services
 from adminprofile.models import CustomUser
 
 class MessageState(TypedDict):
     """State of the conversation."""
-    user: CustomUser
-    gcal_integration: GCalIntegration
-    service: Services
-    start_time: str
-    end_time: str
+    user_id: int | None
+    to: str | None
+    from_: str | None
+    start_time: str | None
+    end_time: str | None
     description: str
-    messages: Annotated[list[SystemMessage | HumanMessage], "The messages exchanged in the conversation."]
+    messages: Annotated[list[SystemMessage | HumanMessage | AIMessage], add_messages]
+    channel_id: str | None
+
 
 class CalendarAgent:
-    def __init__(self, data=None):
+    def __init__(self):
         self.calendar = GCalIntegration
-        # Initialize LLM – use real OpenAI if API key present, otherwise a simple echo fallback
-        if os.getenv("OPENAI_API_KEY"):
-            from langchain_openai import ChatOpenAI
-            llm = ChatOpenAI(model="gpt-4.1-mini", temperature=0.0)
+        # Initialize LLM – use real Gemini if API key present, otherwise a simple echo fallback
+        if os.getenv("GOOGLE_API_KEY"):
+            from langchain_google_genai import ChatGoogleGenerativeAI
+            llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", temperature=0.0)
         else:
             class EchoLLM:
                 def bind_tools(self, tools):
@@ -45,38 +47,60 @@ class CalendarAgent:
             llm = EchoLLM()
         self.llm = llm
         # Bind the tools so the LLM can call them
-        self.llm = self.llm.bind_tools([self.welcome_message, self.view_services, self.book_appointment, self.send_sms])
+
+        self.llm = self.llm.bind_tools([self.book_appointment])
         self.graph = StateGraph(MessageState)
-        # Build the graph for the agent
-        self.graph.add_edge(START, "welcome_message")
-        self.graph.add_node("welcome_message", self.welcome_message)
-        self.graph.add_node("insert_service_event", self.book_appointment)
-        self.graph.add_node("view services", self.view_services)
 
+        # Nodes
+        self.graph.add_node( "welcome_message", self.welcome_message)
         self.graph.add_node("run_llm", self.run_llm)
+        self.graph.add_node("view_services", self.view_services)
+        # self.graph.add_node("book_appointment", self.book_appointment)
+
+        # START GRAPH
+        self.graph.add_edge(START, "welcome_message")
         self.graph.add_edge("welcome_message", "run_llm")
-        self.graph.add_conditional_edges("run_llm", self.conditional_edge)
-        self.graph.add_edge("run_llm", "insert_service_event")
-        self.graph.add_edge("run_llm", "view services")
-        self.graph.add_edge("run_llm", END)
+        self.graph.add_conditional_edges(
+            "run_llm", 
+            self.conditional_edge, 
+            {
+                "view_services": "view_services", 
+                "end": END
+            }
+        )
+        self.graph.add_edge("view_services", END)
+        self.graph = self.graph.compile(checkpointer=MemorySaver())
 
-        self.graph.compile()
 
-
-    @tool
-    def view_services(self):
+    def view_services(self, state: MessageState):
         """View the services offered by the barber."""
-        services = Services.objects.all()
-        if not services:
-            return {"messages": [AIMessage(content="No services available.")]}
-        service_list = "\n".join([f"{service.title}: {service.description} - ${service.price}" for service in services])
-        # Return as a message update
-        return {"messages": [AIMessage(content=f"Available services:\n{service_list}")]}
+        try:
+            user_id = state.get("user_id")
+            if not user_id:
+                return {"messages": [AIMessage(content="Error: No barber associated with this session.")]}
+            
+            # Fetch barber from DB using ID to avoid serialization issues
+            from adminprofile.models import CustomUser
+            barber = CustomUser.objects.get(pk=user_id)
+            
+            services = Services.objects.filter(barber=barber)
+            if not services:
+                return {"messages": [AIMessage(content="No services available for this barber.")]}
+            
+            service_list = "\n".join([f"{service.title}: {service.description} - ${service.price}" for service in services])
+            # Return as a message update
+            return {"messages": [AIMessage(content=f"Available services:\n{service_list}")]}
+        except Exception as e:
+            return {"messages": [AIMessage(content=f"Error fetching services: {str(e)}")]}
     
-    @tool
-    def welcome_message(self):
-        """Return a friendly welcome message for the Calendar Agent."""
-        return {"messages": [AIMessage(content="Welcome to the Calendar Agent! I can assist you with seeing the services he provides, and i can help you book a haricut with him. If you are satisfied with the service and want to end this converation, send the message \"Stop\". Ottherwise let me know what you would like to do.")]}
+    def welcome_message(self, state: MessageState):
+        """Return a friendly welcome message and interrupt for user choice."""
+        msg = AIMessage(content="Welcome to the Calendar Agent! I can assist you with seeing the services he provides, and i can help you book a haricut with him. If you are satisfied with the service and want to end this converation, send the message \"Stop\". Ottherwise let me know what you would like to do.")
+        
+        # Trigger an interrupt to wait for user input before proceeding to the LLM
+        interrupt("Waiting for user response to the welcome message.")
+        
+        return {"messages": [msg]}
 
     def run_llm(self, state: MessageState):
         """Run the LLM on the current message history and append its response.
@@ -85,6 +109,7 @@ class CalendarAgent:
         try:
             # The LLM expects a list of BaseMessage objects
             response = self.llm.invoke(state["messages"])
+
         except Exception as e:
             # Return a friendly error message to the user
             return {"messages": [AIMessage(content=f"Error: {str(e)}")]}
@@ -102,39 +127,20 @@ class CalendarAgent:
         except Exception:
             return {"messages": [AIMessage(content="Failed to book appointment.")]}
 
-    @tool
-    def send_sms(self, to: str, body: str):
-        """Send a text message via Twilio.
-        The LLM can call this tool whenever it wants to notify the user.
-        Returns a confirmation message as an AIMessage.
-        """
-        if Client is None:
-            # Twilio library not available – graceful fallback
-            return {"messages": [AIMessage(content="⚠️ Twilio library not installed; SMS not sent.")]}
-        # Pull credentials from environment
-        account_sid = os.getenv("TWILIO_ACCOUNT_SID")
-        auth_token = os.getenv("TWILIO_AUTH_TOKEN")
-        from_number = os.getenv("TWILIO_FROM_NUMBER")
-        if not all([account_sid, auth_token, from_number]):
-            return {"messages": [AIMessage(content="⚠️ Twilio credentials not set; SMS not sent.")]}
-        try:
-            client = Client(account_sid, auth_token)
-            client.messages.create(body=body, from_=from_number, to=to)
-            return {"messages": [AIMessage(content="✅ SMS sent.")]}
-        except Exception as e:
-            return {"messages": [AIMessage(content=f"❗️ Failed to send SMS: {e}")]}
 
     def conditional_edge(self, state: MessageState):
         """Determine the next node based on the LLM's last message."""
+        if not state["messages"]:
+            return "end"
+            
         last_message = state["messages"][-1].content.lower()
-        if "view services" in last_message:
-            return "view services"
-        elif "book appointment" in last_message:
-            return "insert_service_event"
+        if "view services" in last_message or "services" in last_message:
+            return "view_services"
         elif "stop" in last_message:
-            return END
+            return "end"
         else:
-            return "welcome_message"
+            # Default to ending if no clear intent is found, or you could route back to run_llm
+            return "end"
 
         
 
