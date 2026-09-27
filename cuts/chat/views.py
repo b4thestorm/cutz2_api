@@ -46,6 +46,12 @@ def barber_agent(request):
             status=404,
         )
 
+    if not barber.is_platform_paid:
+        return JsonResponse(
+            {"error": "Platform subscription required. Please complete payment to use the agent."},
+            status=402,
+        )
+
     if not channel_id:
         channel_id = str(uuid.uuid4())
 

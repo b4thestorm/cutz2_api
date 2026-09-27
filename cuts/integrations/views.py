@@ -13,6 +13,11 @@ from django.core.exceptions import ObjectDoesNotExist
 from django_eventstream import send_event
 from dotenv import dotenv_values
 from rest_framework.views import csrf_exempt
+import stripe
+from django.http import HttpResponse, JsonResponse
+from django.views.decorators.csrf import csrf_exempt as django_csrf_exempt
+from adminprofile.models import CustomUser
+
 
 from integrations.serializer import BookingSerializer
 from integrations.models import Booking, GCalIntegration
@@ -114,5 +119,61 @@ def calendar_events(request):
 def test_stream(request):
     send_event("test", "message", {"text": "test"})
     return Response(200, status=status.HTTP_200_OK, content_type='text/event-stream')
+
+@django_csrf_exempt
+def create_checkout_session(request):
+    """Create a Stripe Checkout Session for platform payment."""
+    if not request.user.is_authenticated:
+        return JsonResponse({"error": "Authentication required"}, status=401)
+
+    stripe.api_key = settings.STRIPE_SECRET_KEY
+    
+    try:
+        checkout_session = stripe.checkout.Session.create(
+            customer_email=request.user.email,
+            payment_method_types=['card'],
+            line_items=[{
+                'price': settings.STRIPE_PRICE_ID,
+                'quantity': 1,
+            }],
+            mode='payment',
+            success_url=settings.STRIPE_SUCCESS_URL,
+            cancel_url=settings.STRIPE_CANCEL_URL,
+            client_reference_id=request.user.id,
+        )
+        return JsonResponse({'url': checkout_session.url})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@django_csrf_exempt
+def stripe_webhook(request):
+    """Handle Stripe webhook events."""
+    payload = request.body
+    sig_header = request.META.get('HTTP_STRIPE_SIGNATURE')
+    endpoint_secret = settings.STRIPE_WEBHOOK_SECRET
+
+    try:
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, endpoint_secret
+        )
+    except (ValueError, stripe.error.SignatureVerificationError) as e:
+        return HttpResponse(status=400)
+
+    if event['type'] == 'checkout.session.completed':
+        session = event['data']['object']
+        user_id = session.get('client_reference_id')
+        stripe_customer_id = session.get('customer')
+
+        if user_id:
+            try:
+                user = CustomUser.objects.get(pk=user_id)
+                user.is_platform_paid = True
+                user.stripe_customer_id = stripe_customer_id
+                user.save()
+            except CustomUser.DoesNotExist:
+                pass
+
+    return HttpResponse(status=200)
+
 
     

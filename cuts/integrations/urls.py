@@ -8,5 +8,7 @@ urlpatterns = [
     path("gcal_auth", views.gcal_auth, name="gcal_auth"),
     path("calendar_events/", views.calendar_events, name="calendar_events"),
     path("test/", views.test_stream, name="test"),
+    path("stripe_checkout/", views.create_checkout_session, name="stripe_checkout"),
+    path("stripe_webhook/", views.stripe_webhook, name="stripe_webhook"),
     path("events/", include(django_eventstream.urls), {"channels": ["gcal_init"]}),
 ]

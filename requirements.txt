@@ -6,11 +6,15 @@ django-extensions
 pillow
 django-cors-headers
 requests
+twilio
+stripe
 python-dotenv
 django-eventstream[drf]==5.1.0
 daphne==4.1.1
-cryptography==3.4.6
+cryptography>=41.0.5,<51
+pyOpenSSL>=24.2.1
 channels==4.0.0
 langgraph
 langchain
+langchain-google-genai
 ipython
