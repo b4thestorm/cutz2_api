@@ -39,8 +39,8 @@ class BarberAgentEndpointTests(TestCase):
     def test_post_returns_barber_for_known_phone_number(self):
         response = self.client.post(
             reverse("barber_agent"),
-            data=json.dumps({"twilio_phone_number": "+15555550100"}),
-            content_type="application/json",
+            data={"To": "+15555550100", "From": "+1234567890", "Body": "Hello"},
+            content_type="application/x-www-form-urlencoded",
         )
         self.assertEqual(response.status_code, 200)
         body = response.json()
@@ -51,18 +51,18 @@ class BarberAgentEndpointTests(TestCase):
     def test_post_returns_404_for_unknown_phone_number(self):
         response = self.client.post(
             reverse("barber_agent"),
-            data=json.dumps({"twilio_phone_number": "+15555550999"}),
-            content_type="application/json",
+            data={"To": "+15555550999", "From": "+1234567890", "Body": "Hello"},
+            content_type="application/x-www-form-urlencoded",
         )
         self.assertEqual(response.status_code, 404)
 
     def test_post_returns_400_when_field_missing(self):
         response = self.client.post(
             reverse("barber_agent"),
-            data=json.dumps({}),
-            content_type="application/json",
+            data={},
+            content_type="application/x-www-form-urlencoded",
         )
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 404)
 
     def test_post_returns_400_for_invalid_json(self):
         response = self.client.post(
@@ -70,7 +70,7 @@ class BarberAgentEndpointTests(TestCase):
             data="not json",
             content_type="application/json",
         )
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 404)
 
     def test_get_method_not_allowed(self):
         response = self.client.get(reverse("barber_agent"))
@@ -79,11 +79,34 @@ class BarberAgentEndpointTests(TestCase):
     def test_does_not_match_client_with_same_phone_number(self):
         response = self.client.post(
             reverse("barber_agent"),
-            data=json.dumps({"twilio_phone_number": "+15555550100"}),
-            content_type="application/json",
+            data={"To": "+15555550100", "From": "+1234567890", "Body": "Hello"},
+            content_type="application/x-www-form-urlencoded",
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["email"], "barber1@example.com")
+
+    def test_post_returns_402_when_barber_not_paid(self):
+        self.barber.is_platform_paid = False
+        self.barber.save()
+        
+        response = self.client.post(
+            reverse("barber_agent"),
+            data={"To": "+15555550100", "From": "+1234567890", "Body": "Hello"},
+            content_type="application/x-www-form-urlencoded",
+        )
+        self.assertEqual(response.status_code, 402)
+        self.assertEqual(response.json()["error"], "Platform subscription required. Please complete payment to use the agent.")
+
+    def test_post_returns_200_when_barber_paid(self):
+        self.barber.is_platform_paid = True
+        self.barber.save()
+        
+        response = self.client.post(
+            reverse("barber_agent"),
+            data={"To": "+15555550100", "From": "+1234567890", "Body": "Hello"},
+            content_type="application/x-www-form-urlencoded",
+        )
+        self.assertEqual(response.status_code, 200)
 
 
 class CalendarAgentToolTests(TestCase):

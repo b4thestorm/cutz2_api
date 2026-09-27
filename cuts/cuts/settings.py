@@ -156,3 +156,10 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 GCAL_SCOPES='https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar'
 GCAL_REDIRECT_URI="http://localhost:8000/integrations/gcal_auth"
+
+# Stripe Settings
+STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "")
+STRIPE_PRICE_ID = os.environ.get("STRIPE_PRICE_ID", "")
+STRIPE_SUCCESS_URL = os.environ.get("STRIPE_SUCCESS_URL", f"{BASE_URL}/success")
+STRIPE_CANCEL_URL = os.environ.get("STRIPE_CANCEL_URL", f"{BASE_URL}/cancel")
+STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
